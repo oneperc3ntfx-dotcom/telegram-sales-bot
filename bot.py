@@ -1,12 +1,19 @@
 import os
 import requests
 from telegram import Update
-from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
+from telegram.ext import (
+    ApplicationBuilder,
+    MessageHandler,
+    ContextTypes,
+    filters
+)
 
+# ================= ENV =================
 TOKEN = os.getenv("BOT_TOKEN")
 APPS_SCRIPT_URL = os.getenv("APPS_SCRIPT_URL")
 
 
+# ================= HANDLE MESSAGE =================
 async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     text = update.message.text.strip()
@@ -20,9 +27,7 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "chat_id": chat_id
         }
 
-        response = requests.post(APPS_SCRIPT_URL, json=payload)
-
-        await update.message.reply_text("📊 Mengambil data omset...")
+        requests.post(APPS_SCRIPT_URL, json=payload)
 
         return
 
@@ -32,11 +37,14 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(parts) < 4:
 
         await update.message.reply_text(
-            "❌ Format salah!\nContoh:\nbudi tas 20.000 100.000"
+            "❌ Format salah!\n\n"
+            "Contoh:\n"
+            "budi tas 20.000 100.000"
         )
 
         return
 
+    # ================= KIRIM KE APPS SCRIPT =================
     payload = {
         "text": text,
         "chat_id": chat_id
@@ -44,15 +52,17 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     requests.post(APPS_SCRIPT_URL, json=payload)
 
+    # ================= BALASAN =================
     await update.message.reply_text(
-        "📨 Tersimpan ke Google Sheets!"
+        "✅ Data berhasil dikirim!"
     )
 
 
 # ================= RUN BOT =================
 app = ApplicationBuilder().token(TOKEN).build()
 
-# PENTING: JANGAN PAKAI ~filters.COMMAND
+# PENTING:
+# jangan pakai ~filters.COMMAND
 app.add_handler(
     MessageHandler(filters.TEXT, handle)
 )
