@@ -13,7 +13,7 @@ TOKEN = os.getenv("BOT_TOKEN")
 APPS_SCRIPT_URL = os.getenv("APPS_SCRIPT_URL")
 
 
-# ================= HANDLE MESSAGE =================
+# ================= HANDLE =================
 async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     text = update.message.text.strip()
@@ -61,8 +61,6 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ================= RUN BOT =================
 app = ApplicationBuilder().token(TOKEN).build()
 
-# PENTING:
-# jangan pakai ~filters.COMMAND
 app.add_handler(
     MessageHandler(filters.TEXT, handle)
 )
