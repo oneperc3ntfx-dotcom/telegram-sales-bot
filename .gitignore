@@ -1,3 +1,15 @@
-credentials.json
+# Environment variables
 .env
+
+# Python cache
 __pycache__/
+*.pyc
+
+# Virtual env
+venv/
+
+# Credentials (kalau masih pakai)
+credentials.json
+
+# Logs
+*.log
