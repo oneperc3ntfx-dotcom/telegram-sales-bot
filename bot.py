@@ -6,7 +6,7 @@ from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTyp
 from datetime import datetime
 from dotenv import load_dotenv
 
-# ================= LOAD TOKEN =================
+# ================= TOKEN =================
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
 
@@ -21,45 +21,63 @@ client = gspread.authorize(creds)
 
 sheet = client.open("SalesBot").sheet1
 
-# ================= PARSER =================
+# ================= PARSE MESSAGE =================
 def parse_message(text):
-    parts = text.split()
+    """
+    Format:
+    nama | produk | modal | harga
+    """
 
-    if len(parts) < 3:
+    try:
+        parts = [x.strip() for x in text.split("|")]
+
+        if len(parts) != 4:
+            return None
+
+        nama = parts[0]
+        produk = parts[1]
+        modal = int(parts[2])
+        harga = int(parts[3])
+
+        return nama, produk, modal, harga
+
+    except:
         return None
 
-    jenis = parts[0].lower()
-    nominal = parts[1]
 
-    if not nominal.isdigit():
-        return None
-
-    produk = " ".join(parts[2:])
-
-    return jenis, nominal, produk
-
-# ================= HANDLE MESSAGE =================
+# ================= HANDLER =================
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
-
     data = parse_message(text)
 
     if not data:
         await update.message.reply_text(
-            "❌ Format salah\nContoh: jual 100000 nasi goreng"
+            "❌ Format salah!\nContoh:\nBudi | Nasi Goreng | 15000 | 25000"
         )
         return
 
-    jenis, nominal, produk = data
+    nama, produk, modal, harga = data
+
     waktu = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    keuntungan = harga - modal
 
-    sheet.append_row([waktu, jenis, nominal, produk])
+    # ================= SAVE TO SHEET =================
+    sheet.append_row([
+        waktu,
+        nama,
+        produk,
+        modal,
+        harga,
+        keuntungan
+    ])
 
-    await update.message.reply_text("✅ Tersimpan ke Google Sheets")
+    await update.message.reply_text(
+        f"✅ Tersimpan!\nUntung: {keuntungan}"
+    )
+
 
 # ================= RUN BOT =================
 app = ApplicationBuilder().token(TOKEN).build()
-
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
 print("Bot running...")
