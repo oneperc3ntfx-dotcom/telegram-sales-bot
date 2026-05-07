@@ -1,55 +1,49 @@
 import os
+import requests
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
-from datetime import datetime
 
-# ================= TOKEN =================
 TOKEN = os.getenv("BOT_TOKEN")
+APPS_SCRIPT_URL = os.getenv("APPS_SCRIPT_URL")
 
-# ================= PARSE MESSAGE =================
-def parse_message(text):
+def parse(text):
     try:
-        parts = [x.strip() for x in text.split("|")]
+        parts = [x.strip() for x in text.split(",")]
 
         if len(parts) != 4:
             return None
 
-        nama = parts[0]
-        produk = parts[1]
-        modal = int(parts[2])
-        harga = int(parts[3])
-
-        return nama, produk, modal, harga
-
+        return {
+            "text": text,
+            "chat_id": None
+        }
     except:
         return None
 
-# ================= HANDLER =================
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text
-    data = parse_message(text)
 
-    if not data:
+async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    chat_id = update.message.chat_id
+
+    parts = [x.strip() for x in text.split(",")]
+
+    if len(parts) != 4:
         await update.message.reply_text(
-            "❌ Format salah!\nContoh:\nBudi | Nasi Goreng | 15000 | 25000"
+            "❌ Format salah!\nContoh:\nbudi , tas , 10.000 , 25.000"
         )
         return
 
-    nama, produk, modal, harga = data
+    payload = {
+        "text": text,
+        "chat_id": chat_id
+    }
 
-    waktu = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    keuntungan = harga - modal
+    requests.post(APPS_SCRIPT_URL, json=payload)
 
-    # SIMPAN SEMENTARA (LOG)
-    print(waktu, nama, produk, modal, harga, keuntungan)
+    await update.message.reply_text("📨 Tersimpan ke Google Sheets!")
 
-    await update.message.reply_text(
-        f"✅ Tersimpan!\nUntung: {keuntungan}"
-    )
-
-# ================= RUN BOT =================
 app = ApplicationBuilder().token(TOKEN).build()
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle))
 
 print("Bot running...")
 app.run_polling()
