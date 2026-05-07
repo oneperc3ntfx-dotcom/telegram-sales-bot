@@ -1,33 +1,13 @@
 import os
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 from telegram import Update
-from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes
+from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filters
 from datetime import datetime
-from dotenv import load_dotenv
 
 # ================= TOKEN =================
-load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
-
-# ================= GOOGLE SHEETS =================
-scope = [
-    "https://spreadsheets.google.com/feeds",
-    "https://www.googleapis.com/auth/drive"
-]
-
-creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
-client = gspread.authorize(creds)
-
-sheet = client.open("SalesBot").sheet1
 
 # ================= PARSE MESSAGE =================
 def parse_message(text):
-    """
-    Format:
-    nama | produk | modal | harga
-    """
-
     try:
         parts = [x.strip() for x in text.split("|")]
 
@@ -43,7 +23,6 @@ def parse_message(text):
 
     except:
         return None
-
 
 # ================= HANDLER =================
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -61,20 +40,12 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     waktu = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     keuntungan = harga - modal
 
-    # ================= SAVE TO SHEET =================
-    sheet.append_row([
-        waktu,
-        nama,
-        produk,
-        modal,
-        harga,
-        keuntungan
-    ])
+    # SIMPAN SEMENTARA (LOG)
+    print(waktu, nama, produk, modal, harga, keuntungan)
 
     await update.message.reply_text(
         f"✅ Tersimpan!\nUntung: {keuntungan}"
     )
-
 
 # ================= RUN BOT =================
 app = ApplicationBuilder().token(TOKEN).build()
