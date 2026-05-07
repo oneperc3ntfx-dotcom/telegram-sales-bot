@@ -6,31 +6,35 @@ from telegram.ext import ApplicationBuilder, MessageHandler, ContextTypes, filte
 TOKEN = os.getenv("BOT_TOKEN")
 APPS_SCRIPT_URL = os.getenv("APPS_SCRIPT_URL")
 
-def parse(text):
-    try:
-        parts = [x.strip() for x in text.split(",")]
-
-        if len(parts) != 4:
-            return None
-
-        return {
-            "text": text,
-            "chat_id": None
-        }
-    except:
-        return None
-
 
 async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text
+
+    text = update.message.text.strip()
     chat_id = update.message.chat_id
 
-    parts = [x.strip() for x in text.split(",")]
+    # ================= COMMAND /OMSET =================
+    if text.lower() == "/omset":
 
-    if len(parts) != 4:
+        payload = {
+            "text": "/omset",
+            "chat_id": chat_id
+        }
+
+        response = requests.post(APPS_SCRIPT_URL, json=payload)
+
+        await update.message.reply_text("📊 Mengambil data omset...")
+
+        return
+
+    # ================= FORMAT INPUT =================
+    parts = text.split(" ")
+
+    if len(parts) < 4:
+
         await update.message.reply_text(
-            "❌ Format salah!\nContoh:\nbudi , tas , 10.000 , 25.000"
+            "❌ Format salah!\nContoh:\nbudi tas 20.000 100.000"
         )
+
         return
 
     payload = {
@@ -40,10 +44,19 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     requests.post(APPS_SCRIPT_URL, json=payload)
 
-    await update.message.reply_text("📨 Tersimpan ke Google Sheets!")
+    await update.message.reply_text(
+        "📨 Tersimpan ke Google Sheets!"
+    )
 
+
+# ================= RUN BOT =================
 app = ApplicationBuilder().token(TOKEN).build()
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle))
+
+# PENTING: JANGAN PAKAI ~filters.COMMAND
+app.add_handler(
+    MessageHandler(filters.TEXT, handle)
+)
 
 print("Bot running...")
+
 app.run_polling()
