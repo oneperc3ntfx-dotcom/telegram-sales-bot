@@ -10,9 +10,7 @@ from telegram.ext import (
 )
 
 TOKEN = os.getenv("BOT_TOKEN")
-
-SALES_SCRIPT_URL = os.getenv("SALES_SCRIPT_URL")
-EXPENSE_SCRIPT_URL = os.getenv("EXPENSE_SCRIPT_URL")
+APPS_SCRIPT_URL = os.getenv("APPS_SCRIPT_URL")
 
 
 # ================= HANDLE =================
@@ -23,23 +21,15 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = update.message.text.strip()
         chat_id = update.message.chat_id
 
-        print("PESAN:", text)
+        print("PESAN SALES:", text)
 
-        lower = text.lower()
-
-        # ================= PENGELUARAN =================
-        if (
-            lower.startswith("keluar ")
-            or lower == "/pengeluaran"
-            or lower == "/total"
-        ):
-
-            print("KE EXPENSE SHEET")
+        # ================= /OMSET =================
+        if text.lower() == "/omset":
 
             requests.post(
-                EXPENSE_SCRIPT_URL,
+                APPS_SCRIPT_URL,
                 json={
-                    "text": text,
+                    "text": "/omset",
                     "chat_id": chat_id
                 },
                 timeout=10
@@ -47,11 +37,22 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             return
 
-        # ================= SALES =================
-        print("KE SALES SHEET")
+        # ================= FORMAT CEK =================
+        parts = text.split(" ")
 
+        if len(parts) < 4:
+
+            await update.message.reply_text(
+                "❌ FORMAT SALAH!\n\n"
+                "Contoh:\n"
+                "budi tas 20.000 100.000"
+            )
+
+            return
+
+        # ================= KIRIM KE APPS SCRIPT =================
         requests.post(
-            SALES_SCRIPT_URL,
+            APPS_SCRIPT_URL,
             json={
                 "text": text,
                 "chat_id": chat_id
@@ -59,12 +60,16 @@ async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
             timeout=10
         )
 
+        await update.message.reply_text(
+            "📨 DATA BERHASIL DIKIRIM"
+        )
+
     except Exception as e:
 
         print("ERROR:", e)
 
         await update.message.reply_text(
-            "⚠️ Server sibuk."
+            "⚠️ Server sedang sibuk, coba lagi."
         )
 
 
@@ -75,6 +80,6 @@ app.add_handler(
     MessageHandler(filters.TEXT, handle)
 )
 
-print("BOT 2 SHEET AKTIF 🚀")
+print("SALES BOT AKTIF 🚀")
 
 app.run_polling()
