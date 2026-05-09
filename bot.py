@@ -1,5 +1,6 @@
 import os
 import requests
+
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
@@ -9,61 +10,71 @@ from telegram.ext import (
 )
 
 TOKEN = os.getenv("BOT_TOKEN")
-APPS_SCRIPT_URL = os.getenv("APPS_SCRIPT_URL")
+
+SALES_SCRIPT_URL = os.getenv("SALES_SCRIPT_URL")
+EXPENSE_SCRIPT_URL = os.getenv("EXPENSE_SCRIPT_URL")
 
 
+# ================= HANDLE =================
 async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    text = update.message.text.strip()
-    chat_id = update.message.chat_id
+    try:
 
-    # DEBUG
-    print("PESAN MASUK:", text)
+        text = update.message.text.strip()
+        chat_id = update.message.chat_id
 
-    # ================= /OMSET =================
-    if text.lower() == "/omset":
+        print("PESAN:", text)
 
-        print("COMMAND OMSET TERDETEKSI")
+        lower = text.lower()
 
-        payload = {
-            "text": "/omset",
-            "chat_id": chat_id
-        }
+        # ================= PENGELUARAN =================
+        if (
+            lower.startswith("keluar ")
+            or lower == "/pengeluaran"
+            or lower == "/total"
+        ):
 
-        requests.post(APPS_SCRIPT_URL, json=payload)
+            print("KE EXPENSE SHEET")
 
-        return
+            requests.post(
+                EXPENSE_SCRIPT_URL,
+                json={
+                    "text": text,
+                    "chat_id": chat_id
+                },
+                timeout=10
+            )
 
-    # ================= FORMAT =================
-    parts = text.split(" ")
+            return
 
-    if len(parts) < 4:
+        # ================= SALES =================
+        print("KE SALES SHEET")
 
-        await update.message.reply_text(
-            "❌ FORMAT BARU:\n"
-            "budi tas 20.000 100.000"
+        requests.post(
+            SALES_SCRIPT_URL,
+            json={
+                "text": text,
+                "chat_id": chat_id
+            },
+            timeout=10
         )
 
-        return
+    except Exception as e:
 
-    payload = {
-        "text": text,
-        "chat_id": chat_id
-    }
+        print("ERROR:", e)
 
-    requests.post(APPS_SCRIPT_URL, json=payload)
-
-    await update.message.reply_text(
-        "✅ DATA BARU MASUK"
-    )
+        await update.message.reply_text(
+            "⚠️ Server sibuk."
+        )
 
 
+# ================= RUN =================
 app = ApplicationBuilder().token(TOKEN).build()
 
 app.add_handler(
     MessageHandler(filters.TEXT, handle)
 )
 
-print("BOT VERSI BARU OMSET AKTIF")
+print("BOT 2 SHEET AKTIF 🚀")
 
 app.run_polling()
