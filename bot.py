@@ -9,77 +9,158 @@ from telegram.ext import (
     filters
 )
 
-TOKEN = os.getenv("BOT_TOKEN")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 APPS_SCRIPT_URL = os.getenv("APPS_SCRIPT_URL")
 
 
-# ================= HANDLE =================
+# ==========================================
+# HANDLE MESSAGE
+# ==========================================
+
 async def handle(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
 
+        if update.message is None:
+            return
+
         text = update.message.text.strip()
         chat_id = update.message.chat_id
 
-        print("PESAN SALES:", text)
+        print(f"[PESAN] {text}")
 
-        # ================= /OMSET =================
-        if text.lower() == "/omset":
+        parts = text.split()
+
+        # ==========================
+        # PERINTAH
+        # ==========================
+
+        if text.lower() in [
+            "/hari",
+            "/bulan",
+            "/omset",
+            "/help"
+        ]:
 
             requests.post(
                 APPS_SCRIPT_URL,
                 json={
-                    "text": "/omset",
+                    "text": text,
                     "chat_id": chat_id
                 },
-                timeout=10
+                timeout=20
             )
 
             return
 
-        # ================= FORMAT CEK =================
-        parts = text.split(" ")
+        # ==========================
+        # BELANJA
+        # ==========================
 
-        if len(parts) < 4:
+        if len(parts) > 0 and parts[0].lower() == "belanja":
 
-            await update.message.reply_text(
-                "❌ FORMAT SALAH!\n\n"
-                "Contoh:\n"
-                "budi tas 20.000 100.000"
-            )
+            if len(parts) != 3:
 
-            return
+                await update.message.reply_text(
 
-        # ================= KIRIM KE APPS SCRIPT =================
-        requests.post(
+"""❌ FORMAT SALAH
+
+Contoh
+
+Belanja 15tas 2000000"""
+                )
+
+                return
+
+        # ==========================
+        # PENJUALAN
+        # ==========================
+
+        else:
+
+            if len(parts) != 3:
+
+                await update.message.reply_text(
+
+"""❌ FORMAT SALAH
+
+Contoh
+
+budi tasLV 250000"""
+                )
+
+                return
+
+        # ==========================
+        # KIRIM KE APPS SCRIPT
+        # ==========================
+
+        response = requests.post(
+
             APPS_SCRIPT_URL,
+
             json={
                 "text": text,
                 "chat_id": chat_id
             },
-            timeout=10
+
+            timeout=20
+
         )
 
-        await update.message.reply_text(
-            "📨 DATA BERHASIL DIKIRIM"
-        )
+        if response.status_code != 200:
+
+            await update.message.reply_text(
+                "⚠️ Gagal menghubungi server."
+            )
 
     except Exception as e:
 
-        print("ERROR:", e)
+        print(e)
 
         await update.message.reply_text(
-            "⚠️ Server sedang sibuk, coba lagi."
+            "⚠️ Server sedang sibuk."
         )
 
 
-# ================= RUN =================
-app = ApplicationBuilder().token(TOKEN).build()
+# ==========================================
+# MAIN
+# ==========================================
 
-app.add_handler(
-    MessageHandler(filters.TEXT, handle)
-)
+def main():
 
-print("SALES BOT AKTIF 🚀")
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-app.run_polling()
+    app.add_handler(
+
+        MessageHandler(
+
+            filters.TEXT & ~filters.COMMAND,
+
+            handle
+
+        )
+
+    )
+
+    app.add_handler(
+
+        MessageHandler(
+
+            filters.Regex(r"^/(hari|bulan|omset|help)$"),
+
+            handle
+
+        )
+
+    )
+
+    print("===================================")
+    print(" SALES BOT BERJALAN 🚀")
+    print("===================================")
+
+    app.run_polling()
+
+
+if __name__ == "__main__":
+    main()
